@@ -12,17 +12,16 @@ and macros that are required to build the majority of those Open webOS
 components which use CMake for configuration.
 
 
-Dependencies
-============
+How to Build on Linux
+=====================
+
+## Dependencies
 
 Below are the tools (and their minimum versions) required to build
 _cmake-modules-webos_:
 
-- cmake 2.8.7
-- make (any version)
-
-How to Build on Linux
-=====================
+* cmake 2.8.7
+* make (any version)
 
 ## Building
 
@@ -50,7 +49,7 @@ From the directory where you originally ran `make install`, enter:
 
 ## Documentation
 
-_cmake-modules-webos_ works with the standard CMake documentation system. For 
+_cmake-modules-webos_ works with the standard CMake documentation system. For
 more information on it, enter:
 
    $ cmake --help-module webOS/webOS
@@ -60,7 +59,7 @@ more information on it, enter:
 Unless otherwise specified, all content, including all source code files and
 documentation files in this repository are:
 
-Copyright (c) 2012-2013 LG Electronics, Inc.
+Copyright (c) 2012-2018 LG Electronics, Inc.
 
 Unless otherwise specified or set forth in the NOTICE file, all content,
 including all source code files and documentation files in this repository are:
@@ -75,3 +74,5 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+SPDX-License-Identifier: Apache-2.0

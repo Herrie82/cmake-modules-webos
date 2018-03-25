@@ -4,10 +4,7 @@
 # WEBOS_TARGET_*
 #
 
-#=============================================================================
-# @@@LICENSE
-#
-#      Copyright (c) 2012-2013 LG Electronics, Inc.
+# Copyright (c) 2012-2018 LG Electronics, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,11 +18,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# LICENSE@@@
-#=============================================================================
- 
+# SPDX-License-Identifier: Apache-2.0
+
 # webOS/LegacyDefines.cmake
- 
 if(DEFINED WEBOS_TARGET_MACHINE)
 	string(TOUPPER ${WEBOS_TARGET_MACHINE} _upper)
 	webos_add_compiler_flags(ALL -DMACHINE_${_upper})
@@ -35,9 +30,9 @@ endif()
 if(DEFINED WEBOS_TARGET_MACHINE_IMPL)
 	if(${WEBOS_TARGET_MACHINE_IMPL} STREQUAL hardware)
 		webos_add_compiler_flags(ALL -DTARGET_DEVICE)
-	elseif(${WEBOS_TARGET_MACHINE_IMPL} STREQUAL vm)
+	elseif(${WEBOS_TARGET_MACHINE_IMPL} STREQUAL emulator)
 		webos_add_compiler_flags(ALL -DTARGET_EMULATOR)
-	elseif(${WEBOS_TARGET_MACHINE_IMPL} STREQUAL simulator)
+	elseif(${WEBOS_TARGET_MACHINE_IMPL} STREQUAL guest)
 		webos_add_compiler_flags(ALL -DTARGET_DESKTOP)
 	endif()
 endif()

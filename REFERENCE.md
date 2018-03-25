@@ -61,7 +61,7 @@ The first five (executable) lines of your top level `CMakeLists.txt` script
 	project(<name> <lang> [<lang> ...])
 
 	include(webOS/webOS)
-	webos_modules_init(1 0 0 QUALIFIER RC6)
+	webos_modules_init(1 6 3)
 	webos_component(<major> <minor> <patch> \[QUALIFIER <value>>])
 
 In order, these lines: specify the version of Cmake that you are using to write
@@ -133,17 +133,29 @@ but not
 Add a flag to the `C_FLAGS` and `CXX_FLAGS` variables which CMake expands on
 the compiler command line.
 
-	webos_add_compiler_flags({ALL | RELEASE | DEBUG} <flag> ...)
+	webos_add_compiler_flags({ALL | RELEASE | DEBUG} <flag> ... [C <flag> ...] [CXX <flag> ...])
 
 - The first argument specifies the build type for which the options should be
   used.
 
 - Each `<flag>` argument represents a compiler flag to be passed through.
 
-For example, the following call turns on all warnings and defines a conditional
-compilation value.
+- Each `<flag>` specified immediately following the build type will be passed
+  to both C and C++ compilers.
 
-	webos_add_compiler_flags(ALL -Wall -DUSE_OWN_MATH)
+- Each `<flag>` specified after the option `C` will be passed only to the
+  C compiler .
+
+- Each `<flag>` specified after the option `CXX` will be passed only to the
+  C++ compiler.
+
+All three types of `<flag>` value may be specified in a single call.
+
+For example, the following call turns on all warnings and defines a conditional
+compilation value for both C and C++, then also add language specific compilation
+flags.
+
+	webos_add_compiler_flags(ALL -Wall -DUSE_OWN_MATH C -std=c98 -werror CXX -std=c++11)
 
 If no build type is provided, a fatal error will occur.
 
@@ -207,8 +219,8 @@ Configures a single file and installs the result in one of the defined Open webO
 installation directories.
 
 	webos_build_configured_file(<path-to-basename>
-	                            <install-dir-name>
-	                            <install-subdir>)
+								<install-dir-name>
+								<install-subdir>)
 
 - `<path-to-basename>` provides the path and stem for the file to be configured.
   Do not include the final ".in". The function appends that to ensure the
@@ -239,14 +251,14 @@ sub-directory, provide an empty string ("") for the argument.
 For example, the following command configures a data file and installs it under
 the Opoen webOS equivaent of `/etc/fred`.
 
-    webos_build_configured_file(files/data/mydata SYSCONFDIR fred)
+	webos_build_configured_file(files/data/mydata SYSCONFDIR fred)
 
 ###webos_build_configured_tree
 Configures and installs all files under a provided directory tree into one of the
 defined Open webOS installation directories.
 
 	webos_build_configured_tree(<tree> <install-dir-name>)
-	
+
 - `<tree>` provides the path to a directory tree containing files to be configured.
   If a relative path is given it is treated as being relative to the root of the
   project, not the current source directory.
@@ -275,15 +287,15 @@ For example, the following command configures all `.in` files under the director
 `files/data/mytree` and installs them under the Open webOS equivalent of `/etc`,
 repdroducing the directory structure below `files/data/mytree`.
 
-    webos_build_configured_tree(files/data/mytree SYSCONFDIR)
-	
+	webos_build_configured_tree(files/data/mytree SYSCONFDIR)
+
 ###webos_build_daemon
 Configures and installs the UPSTART file for a daemon.
 
-    webos_build_daemon([NAME <name>]
-                       [LAUNCH <path-to-basename>]
-                       [ROOTFS]
-                       [RESTRICTED_PERMISSIONS])
+	webos_build_daemon([NAME <name>]
+					   [LAUNCH <path-to-basename>]
+					   [ROOTFS]
+					   [RESTRICTED_PERMISSIONS])
 
 - The `NAME` argument provides the makefile target name for the daemon executable.
   If not provided this defaults to `CMAKE_PROJECT_NAME` (the first argument to
@@ -319,11 +331,11 @@ must be invoked before `webos_build_daemon()` (in order to define the target).
 
 For example
 
-    ...
-    project(mydaemon C)
-    ...
-    add_executable(mydaemon FILES mydaemon.c)
-    webos_build_daemon()
+	...
+	project(mydaemon C)
+	...
+	add_executable(mydaemon FILES mydaemon.c)
+	webos_build_daemon()
 
 Will install the executable created by `make mydaemon` into the
 `WEBOS_INSTALL_BINDIR` location. It will also configure and install the UPSTART
@@ -332,7 +344,7 @@ scripts `files/launch/mydaemon.in` and `files/launch/mydaemon.conf.in`.
 ###webos_build_db8_files
 Install all _kinds_ and _permissions_ files associated with _db8_.
 
-    webos_build_db8_files([<path_to_db-tree>])
+	webos_build_db8_files([<path_to_db-tree>])
 
 - `<path-to-db-tree>` provides a path to a directory which contains two further
   subdirectories: `permissions` and `kinds`. The function installs every file
@@ -350,10 +362,10 @@ These files do not generally contain any paths and are thus not configured.
 ###webos_build_library
 Install a library and its associated headers.
 
-    webos_build_library([NAME <name>]
-                        [TARGET <target-name>]
-                        [{NOHEADERS|HEADERS <path-to-headers>}]
-                        [RESTRICTED_PERMISSIONS])
+	webos_build_library([NAME <name>]
+						[TARGET <target-name>]
+						[{NOHEADERS|HEADERS <path-to-headers>}]
+						[RESTRICTED_PERMISSIONS])
 
 - Note that `HEADERS` and `NOHEADERS` are mutually exclusive
 
@@ -389,15 +401,15 @@ For consistency, the daemon is called `mydaemon` and the library `libmydaemon`.
 CMake requires all target names to be globally unique within a project, so
 you must provide a different target name for the library.
 
-    project(mydaemon C)
-    ...
-    add_executable(mydaemon ...)
-    webos_build_daemon()
-    ...
-    add_library(apilibrary SHARED ...)
-    set_target_properties(apilibrary PROPERTIES OUTPUT_NAME mydaemon)
-    ...
-    webos_build_library(TARGET apilibrary)
+	project(mydaemon C)
+	...
+	add_executable(mydaemon ...)
+	webos_build_daemon()
+	...
+	add_library(apilibrary SHARED ...)
+	set_target_properties(apilibrary PROPERTIES OUTPUT_NAME mydaemon)
+	...
+	webos_build_library(TARGET apilibrary)
 
 Note that it was unnecessary to provide the `<NAME>` argument as the default of
 `CMAKE_PROJECT_NAME` was correct, but the `TARGET` name **was** required. In the
@@ -427,28 +439,28 @@ Consider a project (admittedly fabricated to demonstrate a point) which installs
 three libraries, each with a different set of headers. The libraries are called
 (imaginatively) mylib1, mylib2, and mylib3. The repsitory is structured thus
 
-    include/public/
-      mylib1.h
-      mylib2.h
-      mylib3.h
-      mylib1/
-         l1h1.h, l1h2.h, ...
-      mylib2/
-          l2h1.h, l2h2.h, ...
-      mylib3/
-         l3h1.h, l3h2.h, ...
+	include/public/
+	  mylib1.h
+	  mylib2.h
+	  mylib3.h
+	  mylib1/
+		 l1h1.h, l1h2.h, ...
+	  mylib2/
+		  l2h1.h, l2h2.h, ...
+	  mylib3/
+		 l3h1.h, l3h2.h, ...
 
 The a project might look like this
 
-    project(mylib C CXX)
-    ...
-    add_library(mylib1 ...)
-    add_library(mylib2 ...)
-    add_library(mylib3 ...)
+	project(mylib C CXX)
+	...
+	add_library(mylib1 ...)
+	add_library(mylib2 ...)
+	add_library(mylib3 ...)
 
-    webos_build_library(NAME mylib1)
-    webos_build_library(NAME mylib2 NOHEADERS)
-    webos_build_library(NAME mylib3 NOHEADERS)
+	webos_build_library(NAME mylib1)
+	webos_build_library(NAME mylib2 NOHEADERS)
+	webos_build_library(NAME mylib3 NOHEADERS)
 
 Note the use of `NOHEADERS` on the second and third calls to `webos_build_library`.
 The first call installs everything under `include/public`. An alternative would
@@ -459,7 +471,7 @@ needed on each call as none of the libraries was called `mylib`.
 ###webos_build_nodejs_module
 Installs a nodejs module.
 
-    webos_build_nodejs_module([NAME <module-basename>])
+	webos_build_nodejs_module([NAME <module-basename>])
 
 - The `NAME` argument provides the **makefile target** name for the program
   executable.
@@ -470,21 +482,21 @@ Installs a nodejs module.
 The _nodejs_ pkg-config data must be used in conjunction with
 `webos_build_nodejs_module()` as shown below:
 
-    include(FindPkgConfig)
-    ...
-    pkg_check_modules(NODEJS REQUIRED nodejs)
-    include_directories(${NODEJS_INCLUDE_DIRS})
-    webos_add_compiler_flags(ALL ${NODEJS_CFLAGS_OTHER})
-    ...
-    add_executable(<module-basename>.node <sources>)
-    target_link_libraries(<module-basename>.node ${NODEJS_LIBRARIES})
-    ...
-    webos_build_nodejs_module(NAME <module-basename>)
+	include(FindPkgConfig)
+	...
+	pkg_check_modules(NODEJS REQUIRED nodejs)
+	include_directories(${NODEJS_INCLUDE_DIRS})
+	webos_add_compiler_flags(ALL ${NODEJS_CFLAGS_OTHER})
+	...
+	add_executable(<module-basename>.node <sources>)
+	target_link_libraries(<module-basename>.node ${NODEJS_LIBRARIES})
+	...
+	webos_build_nodejs_module(NAME <module-basename>)
 
 ###webos_build_pkgconfig
 Configure and install the pkg-config data file for a library project.
 
-    webos_build_pkgconfig([<path-to-basename>])
+	webos_build_pkgconfig([<path-to-basename>])
 
 - If specified, `<path-to-basename>` provides the full relative or absolute
   path to a file `<path-to-basename>.pc.in`
@@ -500,25 +512,25 @@ configuration file to assist other projects in finding it during their build.
 
 A definitive example of such a file follows:
 
-    # <license block>
+	# <license block>
 
-    libdir=@WEBOS_INSTALL_LIBDIR@
-    includedir=@WEBOS_INSTALL_INCLUDEDIR@
+	libdir=@WEBOS_INSTALL_LIBDIR@
+	includedir=@WEBOS_INSTALL_INCLUDEDIR@
 
-    Name: @CMAKE_PROJECT_NAME@
-    Description: @WEBOS_PROJECT_SUMMARY@
-    Version: @WEBOS_COMPONENT_VERSION@
-    Libs: -L${libdir} -l@CMAKE_PROJECT_NAME@
-    Cflags: -I${includedir}
+	Name: @CMAKE_PROJECT_NAME@
+	Description: @WEBOS_PROJECT_SUMMARY@
+	Version: @WEBOS_COMPONENT_VERSION@
+	Libs: -L${libdir} -l@CMAKE_PROJECT_NAME@
+	Cflags: -I${includedir}
 
 Indeed, for any project which installs a single library, with the same name as
 provided to the CMake `project()` command, this is all that is needed.
 
 For example,
 
-    project <myjson CXX>
-    ...
-    webos_build_pkconfig()
+	project <myjson CXX>
+	...
+	webos_build_pkconfig()
 
 will configure `CMAKE_SOURCE_DIR/files/pkgconfig/myjson.pc.in` and install the
 configured file under `WEBOS_INSTALL_PKGCONFDIR`.
@@ -526,20 +538,20 @@ configured file under `WEBOS_INSTALL_PKGCONFDIR`.
 The argument tends to get used when your project installs more than one
 library, perhaps providing bindings to multiple client languages. For example:
 
-    project(myjson C CXX)
-    ...
-    add_library(myjson_c SHARED ...)
-    add_library(myjson_cpp SHARED ...)
-    ...
-    webos_build_pkgconfig(files/pkgconfig/myjson_c)
-    webos_build_pkgconfig(files/pkgconfig/myjson_cpp)
+	project(myjson C CXX)
+	...
+	add_library(myjson_c SHARED ...)
+	add_library(myjson_cpp SHARED ...)
+	...
+	webos_build_pkgconfig(files/pkgconfig/myjson_c)
+	webos_build_pkgconfig(files/pkgconfig/myjson_cpp)
 
 will configure and install two different pkg-config data files.
 
 ###webos_build_program
 Configures and installs a console program.
 
-    webos_build_program([NAME <name>] [ADMIN] [ROOTFS] [RESTRICTED_PERMISSIONS])
+	webos_build_program([NAME <name>] [ADMIN] [ROOTFS] [RESTRICTED_PERMISSIONS])
 
 - The `NAME` argument provides the **makefile target** name for the program
   executable. Note that this is not necessarily the same as the executable's name.
@@ -562,11 +574,11 @@ must be invoked before `webos_build_program()` (in order to define the target).
 
 For example
 
-    ...
-    project(myapp C)
-    ...
-    add_executable(myapp FILES myapp.c)
-    webos_build_program(ROOTFS ADMIN)
+	...
+	project(myapp C)
+	...
+	add_executable(myapp FILES myapp.c)
+	webos_build_program(ROOTFS ADMIN)
 
 Will install the executable created by `make myapp` into the
 `WEBOS_INSTALL_BASE_SBINDIR` location.
@@ -575,10 +587,10 @@ Will install the executable created by `make myapp` into the
 Configure and install the files associated with providing an interface over the
 _luna-service2_ bus.
 
-    webos_build_system_bus_files([<path-to-files>])
+	webos_build_system_bus_files([<path-to-files>])
 
-- `<path-to-files>` is a path to a directory containing the roles and service
-  files to be installed.
+- `<path-to-files>` is a path to a directory containing the groups, services,
+  roles, API permissions and client permissions files to be installed.
 
   If not provided, this defaults to `CMAKE_SOURCE_DIR/files/sysbus`.
 
@@ -594,33 +606,35 @@ before being installed. The configured files can be inspected under the
 All files in the provided directory which match one of the following patterns
 will be configured and installed as shown below.
 
-    Pattern             Installed in
-    *.service.pub.in    WEBOS_INSTALL_SYSBUS_PUBSERVICESDIR
-    *.service.prv.in    WEBOS_INSTALL_SYSBUS_PRVSERVICESDIR
-    *.json.pub.in       WEBOS_INSTALL_SYSBUS_PUBROLESDIR
-    *.json.prv.in       WEBOS_INSTALL_SYSBUS_PRVROLESDIR
+	Pattern             Installed in
+	*.groups.json.in    WEBOS_INSTALL_SYSBUS_GROUPSDIR
+	*.service.in        WEBOS_INSTALL_SYSBUS_SERVICESDIR
+	*.role.json.in      WEBOS_INSTALL_SYSBUS_ROLESDIR
+	*.perm.json.in      WEBOS_INSTALL_SYSBUS_PERMISSIONSDIR
+	*.api.json.in       WEBOS_INSTALL_SYSBUS_APIPERMISSIONSDIR
+	*.container.json.in WEBOS_INSTALL_SYSBUS_CONTAINERSDIR
 
-No other files will be configured. The last two fields of the input file names
-(i.e. `.pub.in` and `.prv.in`) are removed from the names of the installed files.
+No other files will be configured. The last fields of the input file names,
+`.in`, are removed from the names of the installed files.
 
 All files in the provided directory which match one of the following patterns
 will be installed, without being configured, as shown below.
 
-    Pattern             Installed in
-    *.service.pub       WEBOS_INSTALL_SYSBUS_PUBSERVICESDIR
-    *.service.prv       WEBOS_INSTALL_SYSBUS_PRVSERVICESDIR
-    *.json.pub          WEBOS_INSTALL_SYSBUS_PUBROLESDIR
-    *.json.prv          WEBOS_INSTALL_SYSBUS_PRVROLESDIR
+	Pattern             Installed in
+	*.groups.json       WEBOS_INSTALL_SYSBUS_GROUPSDIR
+	*.service           WEBOS_INSTALL_SYSBUS_SERVICESDIR
+	*.role.json         WEBOS_INSTALL_SYSBUS_ROLESDIR
+	*.perm.json         WEBOS_INSTALL_SYSBUS_PERMISSIONSDIR
+	*.api.json          WEBOS_INSTALL_SYSBUS_APIPERMISSIONSDIR
+	*.container.json    WEBOS_INSTALL_SYSBUS_CONTAINERSDIR
 
-No other files will be installed without being configured. The last field of
-the input file names (i.e. `.pub` and `.prv`) are removed from the names of
-the installed files.
+No other files will be installed without being configured.
 
 ###webos_component
 Specify the version number for the Open webOS project being configured, and
 check that it matches the one expected if not being built standalone.
 
-    webos_component(<major> <minor> <patch> [QUALIFIER <qualifier>])
+	webos_component(<major> <minor> <patch> [QUALIFIER <qualifier>])
 
 - The three version number arguments are mandatory. Each must be a non-negative
   integer value.
@@ -631,26 +645,26 @@ check that it matches the one expected if not being built standalone.
 
 The following variables and symbols are defined after calling this function:
 
-    WEBOS_API_VERSION       The numeric version string of form major.minor.patch
-    WEBOS_API_VERSION_MAJOR The major version only
-    WEBOS_COMPONENT_VERSION The fully qualified project version string
+	WEBOS_API_VERSION       The numeric version string of form major.minor.patch
+	WEBOS_API_VERSION_MAJOR The major version only
+	WEBOS_COMPONENT_VERSION The fully qualified project version string
 
 For example,
 
-    webos_component(1 2 3 QUALIFIER RC4)
+	webos_component(1 2 3 QUALIFIER RC4)
 
 would define the following variables
 
-    WEBOS_API_VERSION       "1.2.3"
-    WEBOS_API_VERSION_MAJOR "1"
-    WEBOS_COMPONENT_VERSION "1.2.3~rc4"
+	WEBOS_API_VERSION       "1.2.3"
+	WEBOS_API_VERSION_MAJOR "1"
+	WEBOS_COMPONENT_VERSION "1.2.3~rc4"
 
 Note that the qualifier is folded to lower case. Thus the `QUALIFIER` argument
 is case-insensitive.
 
 In a build system, it is expected that CMake will be invoked as
 
-    cmake -DWEBOS_COMPONENT_VERSION="major.minor.patch~qualifier" ..
+	cmake -DWEBOS_COMPONENT_VERSION="major.minor.patch~qualifier" ..
 
 In other words, the build system is expected to pass in the fully qualified
 version of the project it is expecting to build. When this occurs, the call to
@@ -660,7 +674,7 @@ matches that on the command line and generates a fatal error if it does not.
 ###webos_config_build_doxygen
 Create makefile targets for producing and installing _Doxygen_ documentation.
 
-    webos_config_build_doxygen(<doc-dir> <doxygen-file>...)
+	webos_config_build_doxygen(<doc-dir> <doxygen-file>...)
 
 - `<doc-dir>` is a path to a directory containing the file `<doxygen-file>.in`
 
@@ -669,7 +683,7 @@ Create makefile targets for producing and installing _Doxygen_ documentation.
   If a relative path is provided, it is treated as relative to the root of the
   project, not the current source directory.
 
-- `<doxygen-file>...` is the stem of one or more Doxygen control-file names, 
+- `<doxygen-file>...` is the stem of one or more Doxygen control-file names,
   without the final ".in" extensions.
 
 The provided Doxygen file is first configured into a subdirectory of
@@ -678,7 +692,7 @@ Doxygen settings are overridden (`GENERATE_HTML`, `OUTPUT_DIRECTORY`, and
 `EXCLUDE`) to ensure consistency in the results of the `make docs` target.
 
 If multiple `*.in` doxygen files are specified, they will all be configured
-and installed, each one being placed in in a subfolder named after its 
+and installed, each one being placed in in a subfolder named after its
 basename, and a new `doc-<basename>` target will be added for each one.
 
 The generated makefiles will now contain two top-level targets:
@@ -699,7 +713,7 @@ installed via explicit make commands.
 ###webos_configure_header_files
 Configure all headers files in a directory tree and optionally install them.
 
-    webos_configure_header_files(<headers-tree> [INSTALL])
+	webos_configure_header_files(<headers-tree> [INSTALL])
 
 - `<headers-tree>` provides a path to a directory-tree containing one or more
   ".in" files.
@@ -730,7 +744,7 @@ as the need requires, each of these paths should be modified to use the
 ###webos_configure_source_files
 Configure any source files and add the configured versions to a list variable.
 
-    webos_configure_source_files(<list-var> <src-file> ...)
+	webos_configure_source_files(<list-var> <src-file> ...)
 
 - `<list-var>` is the name of a list variable to which will be appended the
   absolute paths of all configured source files.
@@ -750,69 +764,141 @@ for passing to `add_library` or `add_executable`.
 
 For example
 
-    include_directories( ... )
-    list(APPEND sourcelist src/file1.c src/files2.c ... )
-    # configure src/file3.c.in and src/file4.c.in
-    webos_configure_source_files(sourcelist src/file3.c src/file4.c ... )
-    add_executable(${CMAKE_PROJECT_NAME} ${sourcelist})
-    link_target_libraries(${CMAKE_PROJECT_NAME} ... )
-    webos_build_program()
+	include_directories( ... )
+	list(APPEND sourcelist src/file1.c src/files2.c ... )
+	# configure src/file3.c.in and src/file4.c.in
+	webos_configure_source_files(sourcelist src/file3.c src/file4.c ... )
+	add_executable(${CMAKE_PROJECT_NAME} ${sourcelist})
+	link_target_libraries(${CMAKE_PROJECT_NAME} ... )
+	webos_build_program()
 
 creates an executable from `file1.c` and `file2.c`, plus the configured
 versions of `file43.c` and `file4.c`.
 
 ###webos_core_os_dep
-Adds a compiler flag and CMake symbol to indicate the core operatring system
+Adds a compiler flag and CMake symbol to indicate the core operating system
 being targeted
 
-    webos_core_os_dep()
+	webos_core_os_dep()
 
-This function is intended to take the definition of `WEBOS_TARGET_CORE_OS` from
-the CMake command line (supplied via `-DWEBOS_TARGET_CORE_OS=<some value>`)
-and pass it through to the compiler in a form suitable for conditional compilation.
+This function takes the definition of `WEBOS_TARGET_CORE_OS` from the CMake
+command line (supplied via `-DWEBOS_TARGET_CORE_OS=<value>`) and passes it
+through to the compiler in a form suitable for conditional compilation.
 
 After being invoked, `WEBOS_TARGET_CORE_OS` is guaranteed to be defined. It will
-either have the value supplied from the command line, or be set to "ubuntu". In
-addition, a compiler flag will have been added of the form:
+either have the value supplied from the command line, or be set to `ubuntu`. In
+addition, a compiler flag will have been added of the form
 
-    -DWEBOS_TARGET_CORE_OS_<value>
+	-DWEBOS_TARGET_CORE_OS_<uppercased-value>
 
-For example, with a command line of
+with any characters from the value of `WEBOS_TARGET_CORE_OS` that can not appear
+in a preprocessor identifier converted to underscores. For example, with a
+command line of
 
-    cmake -DWEBOS_TARGET_CORE_OS=rockhopper
+	cmake -DWEBOS_TARGET_CORE_OS=rockhopper
 
 invoking `webos_core_os_dep()` will add the compiler flag
 
-    -DWEBOS_TARGET_CORE_OS_ROCKHOPPER
+	-DWEBOS_TARGET_CORE_OS_ROCKHOPPER
 
 allowing conditional code such as
 
-    #ifdef WEBOS_TARGET_CORE_OS_UBUNTU
-        // running stand-alone
-    #else
-        // Running on hardware
-    #endif
+	#ifdef WEBOS_TARGET_CORE_OS_UBUNTU
+		// running stand-alone
+	#else
+		// Running on hardware
+	#endif
 
 `WEBOS_TARGET_CORE_OS` can also be used to conditionalize actions within the
 CMake script itself, by testing it with `STREQUAL`.
+
+###webos_distro_dep
+Adds a compiler flag and CMake symbol to indicate the distribution being
+targeted.
+
+	webos_distro_dep()
+
+This function takes the definition of `WEBOS_TARGET_DISTRO` from the CMake
+command line (supplied via `-DWEBOS_TARGET_DISTRO=<value>`) and passes it
+through to the compiler in a form suitable for conditional compilation.
+
+After being invoked, `WEBOS_TARGET_DISTRO` is guaranteed to be defined. It will
+either have the value supplied from the command line, or be set to `none`.
+In addition, a compiler flag will have been added of the form
+
+	-DWEBOS_TARGET_DISTRO_<uppercased-value>
+
+with any characters from the value of `WEBOS_TARGET_DISTRO` that can not appear
+in a preprocessor identifier converted to underscores. For example, with a
+command line of
+
+	cmake -DWEBOS_TARGET_DISTRO=webos-wearable
+
+invoking `webos_distro_dep()` will add the compiler flag
+
+	-DWEBOS_TARGET_CORE_DISTRO_WEBOS_WEARABLE
+
+allowing conditional code such as
+
+	#ifdef WEBOS_TARGET_CORE_DISTRO_WEBOS_WEARABLE
+		// building for webOS Wearable distribution
+	#endif
+
+`WEBOS_TARGET_CORE_DISTRO` can also be used to conditionalize actions within the
+CMake script itself, by testing it with `STREQUAL`.
+
+###webos_distro_variant_dep
+Adds a compiler flag and CMake symbol to indicate the variant of the distribution
+being targeted.
+
+	webos_distro_variant_dep()
+
+This function takes the definition of `WEBOS_TARGET_DISTRO_VARIANT` from the CMake
+command line (supplied via `-DWEBOS_TARGET_DISTRO_VARIANT=<value>`) and passes it
+through to the compiler in a form suitable for conditional compilation.
+
+After being invoked, `WEBOS_TARGET_DISTRO_VARIANT` is guaranteed to be defined.
+It will either have the value supplied from the command line, or be set to
+`normal`.  In addition, a compiler flag will have been added of the form
+
+	-DWEBOS_TARGET_DISTRO_VARIANT_<uppercased-value>
+
+with any characters from the value of `WEBOS_TARGET_DISTRO_VARIANT` that can not
+appear in a preprocessor identifier converted to underscores. For example, with a
+command line of
+
+	cmake -DWEBOS_TARGET_DISTRO_VARIANT=lite
+
+invoking `webos_distro_variant_dep()` will add the compiler flag
+
+	-DWEBOS_TARGET_CORE_DISTRO_VARIANT_LITE
+
+allowing conditional code such as
+
+	#ifdef WEBOS_TARGET_CORE_DISTRO_VARIANT_LITE
+		// building for "lite" distribution variant
+	#endif
+
+`WEBOS_TARGET_CORE_DISTRO_VARIANT` can also be used to conditionalize actions
+within the CMake script itself, by testing it with `STREQUAL`.
 
 ###webos_include_install_paths
 Create a header file containing all #defines for WEBOS_INSTALL_* variables and
 force it to be included by all C and C++ source files.
 
 A simple alternative to using `webos_configure_source_files()` to configure
-paths in source code is to add a `-DVAR="path"` command line compiler flag 
+paths in source code is to add a `-DVAR="path"` command line compiler flag
 and reference the variable in the source code. For example, instead of:
 
-    fd = open("@WEBOS_INSTALL_SYSCONDIR@/myfile.conf", "r")
+	fd = open("@WEBOS_INSTALL_SYSCONDIR@/myfile.conf", "r")
 
 script authors often do this in their CMake script
 
-    webos_add_compiler_flag(ALL -DMYCONFPATH="${WEBOS_INSTALL_SYSCONFDIR}")
+	webos_add_compiler_flag(ALL -DMYCONFPATH="${WEBOS_INSTALL_SYSCONFDIR}")
 
 and this in their source file
 
-    fd = open(MYCONFPATH "/myfile.conf", "r")
+	fd = open(MYCONFPATH "/myfile.conf", "r")
 
 which avoids needing to use `webos_configure_source_files()`.
 
@@ -821,15 +907,15 @@ a header file `webospaths.h` under `WEBOS_BINARY_CONFIGURED_DIR` and then adds
 the flag `-include WEBOS_BINARY_CONFIGURED_DIR/webos_paths.h` to all compiles.
 As a result, all source files in a component using this function gain defined
 constants for all system installation paths.
- 
+
 Thus the last line above simply becomes
 
-    fd = open(WEBOS_INSTALL_SYSCONFDIR "/myfile.conf", "r")
+	fd = open(WEBOS_INSTALL_SYSCONFDIR "/myfile.conf", "r")
 
 ###webos_install_symlink
 Install a **symbolic** link during `make install`.
 
-    webos_install_symlink(<target> <link>)
+	webos_install_symlink(<target> <link>)
 
 - `<target>` specifies the existing file to be the target of the symbolic link.
 
@@ -844,33 +930,33 @@ to `install_manifest.txt` in the binary tree.
 ###webos_machine_dep
 Adds a compiler flag and CMake symbol to indicate the machine being targeted
 
-    webos_machine_dep()
+	webos_machine_dep()
 
-This function is intended to take the definition of `WEBOS_TARGET_MACHINE` from
-the CMake command line (supplied via `-DWEBOS_TARGET_MACHINE=<some value>`)
-and pass it through to the compiler in a form suitable for conditional compilation.
+This function takes the definition of `WEBOS_TARGET_MACHINE` from the CMake
+command line (supplied via `-DWEBOS_TARGET_MACHINE=<value>`) and passes it
+through to the compiler in a form suitable for conditional compilation.
 
 After being invoked, `WEBOS_TARGET_MACHINE` is guaranteed to be defined. It will
-either have the value supplied from the command line, or be set to "standalone".
-In addition, a compiler flag will have been added of the form:
+either have the value supplied from the command line, or be set to `standalone`.
+In addition, a compiler flag will have been added of the form
 
-    -DWEBOS_TARGET_MACHINE_<value>
+	-DWEBOS_TARGET_MACHINE_<uppercased-value>
 
-For example, with a command line of
+with any characters from the value of `WEBOS_TARGET_MACHINE` that can not appear
+in a preprocessor identifier converted to underscores. For example, with a
+command line of
 
-    cmake -DWEBOS_TARGET_MACHINE=qemux86
+	cmake -DWEBOS_TARGET_MACHINE=qemux86
 
 invoking `webos_machine_dep()` will add the compiler flag
 
-    -DWEBOS_TARGET_MACHINE_QEMUX86
+	-DWEBOS_TARGET_MACHINE_QEMUX86
 
 allowing conditional code such as
 
-    #ifdef WEBOS_TARGET_MACHINE_QEMUX86
-        // running on the emulator
-    #else
-        // Running on hardware
-    #endif
+	#ifdef WEBOS_TARGET_MACHINE_QEMUX86
+		// running on qemux86
+	#endif
 
 `WEBOS_TARGET_MACHINE` can also be used to conditionalize actions within the
 CMake script itself, by testing it with `STREQUAL`.
@@ -878,59 +964,61 @@ CMake script itself, by testing it with `STREQUAL`.
 For older projects, the following CMake commands will define the older
 `MACHINE_<name>` symbols () for the compiler.
 
-    webos_machine_dep()
-    include(webOS/LegacyDefine)
-    ...
-    # test WEBOS_TARGET_MACHINE to include or exclude specific files.
-    ...
+	webos_machine_dep()
+	include(webOS/LegacyDefine)
+	...
+	# test WEBOS_TARGET_MACHINE to include or exclude specific files.
+	...
 
 Thus, consider the following combination of CMake command-line (preceded by a
 "$" sign) and CMake **commands** (the rest of it):
 
-    $ cmake -DWEBOS_TARGET_MACHINE=topaz
+	$ cmake -DWEBOS_TARGET_MACHINE=topaz
 
-    webos_machine_dep()
-    include(webOS/LegacyDefine)
+	webos_machine_dep()
+	include(webOS/LegacyDefine)
 
-    if(${WEBOS_TARGET_MACHINE} STREQUAL "topaz")
-    #    add some source files for the touchpad
-    endif()
+	if(${WEBOS_TARGET_MACHINE} STREQUAL "topaz")
+	#    add some source files for the touchpad
+	endif()
 
 Would add the following flags to the compiler command line
 
-    -DWEBOS_TARGET_MACHINE_TOPAZ
-    -DMACHINE_TOPAZ
+	-DWEBOS_TARGET_MACHINE_TOPAZ
+	-DMACHINE_TOPAZ
 
 ###webos_machine_impl_dep
 Adds a compiler flag and CMake symbol to indicate the target machine
 implementation, allowing conditionalizing of code and build scripts.
 
-    webos_machine_impl_dep()
+	webos_machine_impl_dep()
 
-This function is intended to take the definition of `WEBOS_TARGET_MACHINE_IMPL` from
-the CMake command line (supplied via `-DWEBOS_TARGET_MACHINE_IMPL=<some value>`)
-and pass it through to the compiler in a form suitable for conditional compilation.
+This function is takes the definition of `WEBOS_TARGET_MACHINE_IMPL` from the
+CMake command line (supplied via `-DWEBOS_TARGET_MACHINE_IMPL=<value>`) and passes
+it through to the compiler in a form suitable for conditional compilation.
 
 The difference between the target MACHINE and the MACHINE_IMPL refers to the
 logical target vs the actual implementation. The difference between a "machine
-implementation" dependency on simulator and a core operating system dependency
+implementation" dependency on `guest` and a core operating system dependency
 is subtle: if there must be alternative behavior when when running on a host OS,
 e.g. simulating booting, then it's the former; if the dependency is on the
 presence of some project, e.g. X11, then it's the latter.
 
 After being invoked, `WEBOS_TARGET_MACHINE_IMPL` is guaranteed to be defined. It
 will either have the value supplied from the command line, or be set to
-`simulator`. In addition, a compiler flag will have been added of the form:
+`guest`. In addition, a compiler flag will have been added of the form
 
-    -DWEBOS_TARGET_MACHINE_IMPL_<value>
+	-DWEBOS_TARGET_MACHINE_IMPL_<uppercased-value>
 
-For example, with a command line of
+with any characters from the value of `WEBOS_TARGET_MACHINE_IMPL` that can not
+appear in a preprocessor identifier converted to underscores. For example, with
+a command line of
 
-    cmake -DWEBOS_TARGET_MACHINE_IMPL=simulator
+	cmake -DWEBOS_TARGET_MACHINE_IMPL=emulator
 
 invoking _webos_machine_impl_dep_ will add the compiler flag
 
-    -DWEBOS_TARGET_MACHINE_IMPL_SIMULATOR
+	-DWEBOS_TARGET_MACHINE_IMPL_EMULATOR
 
 `WEBOS_TARGET_MACHINE_IMPL` can also be used to conditionalize actions within the
 CMake script itself, by testing it with `STREQUAL`.
@@ -938,39 +1026,74 @@ CMake script itself, by testing it with `STREQUAL`.
 For older projects, the following CMake commands will define the older
 `TARGET_<name>` symbols () for the compiler.
 
-    webos_machine_impl_dep()
-    include(webOS/LegacyDefine)
-    ...
-    # test WEBOS_TARGET_MACHINE_IMPL to include or exclude specific files.
-    ...
+	webos_machine_impl_dep()
+	include(webOS/LegacyDefine)
+	...
+	# test WEBOS_TARGET_MACHINE_IMPL to include or exclude specific files.
+	...
 
 Thus, consider the following combination of CMake command-line (preceded by a
 "$" sign) and CMake **commands** (the rest of it):
 
-    $ cmake -DWEBOS_TARGET_MACHINE_IMPL=hardware
+	$ cmake -DWEBOS_TARGET_MACHINE_IMPL=hardware
 
-    webos_machine_dep()
-    include(webOS/LegacyDefine)
+	webos_machine_impl_dep()
+	include(webOS/LegacyDefine)
 
-Would add the following flags to the compiler command line
+would add the following flags to the compiler command line
 
-    -DWEBOS_TARGET_MACHINE_IMPL_HARDWARE
-    -DTARGET_DEVICE
+	-DWEBOS_TARGET_MACHINE_IMPL_HARDWARE
+	-DTARGET_DEVICE
 
 The following shows the mapping between machine implementation values and
 legacy symbol names:
 
-    value       New Symbol                           Legacy Symbol
-    hardware    WEBOS_TARGET_MACHINE_IMPL_HARDWARE   TARGET_DEVICE
-    vm          WEBOS_TARGET_MACHINE_IMPL_VM         TARGET_EMULATOR
-    simulator   WEBOS_TARGET_MACHINE_IMPL_SIMULATOR  TARGET_DESKTOP
+	Value       New Symbol                           Legacy Symbol
+	hardware    WEBOS_TARGET_MACHINE_IMPL_HARDWARE   TARGET_DEVICE
+	emulator    WEBOS_TARGET_MACHINE_IMPL_EMULATOR   TARGET_EMULATOR
+	guest       WEBOS_TARGET_MACHINE_IMPL_GUEST      TARGET_DESKTOP
+
+###webos_machine_variant_dep
+Adds a compiler flag and CMake symbol to indicate the variant of machine
+being targeted.
+
+	webos_machine_variant_dep()
+
+This function takes the definition of `WEBOS_TARGET_MACHINE_VARIANT` from the CMake
+command line (supplied via `-DWEBOS_TARGET_MACHINE_VARIANT=<value>`) and passes it
+through to the compiler in a form suitable for conditional compilation.
+
+After being invoked, `WEBOS_TARGET_MACHINE_VARIANT` is guaranteed to be defined.
+It will either have the value supplied from the command line, or be set to
+`normal`.  In addition, a compiler flag will have been added of the form
+
+	-DWEBOS_TARGET_MACHINE_VARIANT_<uppercased-value>
+
+with any characters from the value of `WEBOS_TARGET_MACHINE_VARIANT` that can not
+appear in a preprocessor identifier converted to underscores. For example, with a
+command line of
+
+	cmake -DWEBOS_TARGET_MACHINE_VARIANT=eztv
+
+invoking `webos_machine_variant_dep()` will add the compiler flag
+
+	-DWEBOS_TARGET_MACHINE_VARIANT_EZTV
+
+allowing conditional code such as
+
+	#ifdef WEBOS_TARGET_MACHINE_VARIANT_EZTV
+		// building for "eztv" machine variant
+	#endif
+
+`WEBOS_TARGET_MACHINE_VARIANT` can also be used to conditionalize actions
+within the CMake script itself, by testing it with `STREQUAL`.
 
 ###webos_make_binary_path_absolute and webos_make_source_path_absolute
 Convert a relative path to an absolute path with respect to the root directory
 of the source or binary tree.
 
-    webos_make_binary_path_absolute(<var> <default> <strip>)
-    webos_make_source_path_absolute(<var> <default> <strip>)
+	webos_make_binary_path_absolute(<var> <default> <strip>)
+	webos_make_source_path_absolute(<var> <default> <strip>)
 
 - `<var>` is the **name** of a variable containing a possibly relative path.
 
@@ -982,7 +1105,7 @@ of the source or binary tree.
 These functions are used internally within the modules, usually to overcome the
 interesting consequences of a CMake command line such as this:
 
-    cmake -DWEBOS_INSTALL_ROOT=../../webosinstalls ..
+	cmake -DWEBOS_INSTALL_ROOT=../../webosinstalls ..
 
 which can end up with those ".."'s embedded in pkg-config files if not made
 absolute. They are made public in case they should be useful to authors of
@@ -990,19 +1113,19 @@ CMake scripts.
 
 Whilst the same effect can be achieved by the following CMake commands:
 
-    set(var "../../INSTALL")
-    set(var1 ${CMAKE_BINARY_DIR}/${var})
+	set(var "../../INSTALL")
+	set(var1 ${CMAKE_BINARY_DIR}/${var})
 
 This will leave you with an absolute path something like:
 
-    /home/<user>/projects/mylib/BUILD/../../INSTALL
+	/home/<user>/projects/mylib/BUILD/../../INSTALL
 
 whereas these functions do some magic to clean up the result, producing in the
 above example
 
-    webos_make_binary_path_absolute(var "INSTALL" TRUE)
-    # sets 'var' to /home/<user>/projects/INSTALL
-    # or /home/<user>/projects/mylib/BUILD/INSTALL if ${var} == ""
+	webos_make_binary_path_absolute(var "INSTALL" TRUE)
+	# sets 'var' to /home/<user>/projects/INSTALL
+	# or /home/<user>/projects/mylib/BUILD/INSTALL if ${var} == ""
 
 Note that, if the path is empty, we still get a sensible absolute path as a
 result.
@@ -1010,7 +1133,7 @@ result.
 ###webos_modules_init
 Initialize the webOS CMake modules.
 
-    webos_modules_init(<major> <minor> <patch> [QUALIFIER <qualifier>])
+	webos_modules_init(<major> <minor> <patch> [QUALIFIER <qualifier>])
 
 - The combined arguments define the version of the webOS CMake modules being used
   to write the current `CMakeLists.txt` build script.
@@ -1048,9 +1171,9 @@ control files.
 
 The Summary subsection should be formatted as follows:
 
-    Summary
-    -------
-    <one line description>
+	Summary
+	-------
+	<one line description>
 
 Finally, the `PKG_CONFIG_PATH` environment variable will have a number of paths
 appended to it to help ensure previously compiled and installed Open webOS
@@ -1063,12 +1186,46 @@ the user's home directory and provide a common override of `WEBOS_INSTALL_ROOT`
 to all CMake command lines. For that reason, the provided path is also added
 to `PKG_CONFIG_PATH`.
 
+###webos_soc_family_dep
+Adds a compiler flag and CMake symbol to indicate the SOC family being targeted.
+
+	webos_soc_family_dep()
+
+This function takes the definition of `WEBOS_TARGET_SOC_FAMILY` from the CMake
+command line (supplied via `-DWEBOS_TARGET_SOC_FAMILY=<value>`) and passes it
+through to the compiler in a form suitable for conditional compilation.
+
+After being invoked, `WEBOS_TARGET_SOC_FAMILY` is guaranteed to be defined.
+It will either have the value supplied from the command line, or be set to
+`none`. In addition, a compiler flag will have been added of the form
+
+	-DWEBOS_TARGET_SOC_FAMILY_<uppercased-value>
+
+with any characters from the value of `WEBOS_TARGET_SOC_FAMILY` that can not
+appear in a preprocessor identifier converted to underscores. For example, with
+a command line of
+
+	cmake -DWEBOS_TARGET_SOC_FAMILY=lg1
+
+invoking `webos_soc_family_dep()` will add the compiler flag
+
+	-DWEBOS_TARGET_SOC_FAMILY_LG1
+
+allowing conditional code such as
+
+	#ifdef WEBOS_TARGET_SOC_FAMILY_LG1
+		// building for the "lg1" family of SoC-s
+	#endif
+
+`WEBOS_TARGET_SOC_FAMILY` can also be used to conditionalize actions within the
+CMake script itself, by testing it with `STREQUAL`.
+
 ###webos_upstream_from_repo
 Specify the version number for the FOSS project being configured, and check
 that it matches the one expected (if `WEBOS_COMPONENT_VERSION` is passed in
 on the command line).
 
-    webos_upstream_from_repo(<upstream-version> <change-count>)
+	webos_upstream_from_repo(<upstream-version> <change-count>)
 
 - `<upstream-version>` is a string identifying the version of the original
   project from which the internal fork was taken. The version is basically
@@ -1086,13 +1243,13 @@ Whereas `webos_component()` produces a `WEBOS_API_VERSION` variable with the
 format "9.9.9" or "9.9.9~xxx", this function produces one with the following
 format
 
-    "<upstream-version>-0webos<change-count>"
+	"<upstream-version>-0webos<change-count>"
 
 thus, a function call of `webos_upstream_from_repo(1.5-beta 23)` defines the
 following
 
-    WEBOS_API_VERSION        1.5-beta-0webos23
-    WEBOS_API_VERSION_MAJOR  1
+	WEBOS_API_VERSION        1.5-beta-0webos23
+	WEBOS_API_VERSION_MAJOR  1
 
 In the exceptional case that `<change-count>` is zero, `WEBOS_API_VERSION`
 will not have anything appended. That is, it will have the same value as
@@ -1105,7 +1262,7 @@ compared to any value of `WEBOS_COMPONENT_VERSION` passed in from the command li
 Search for the source code of the Google Test framework, and add it as a
 subproject excluded from the `all` target.
 
-    webos_use_gtest()
+	webos_use_gtest()
 
 This function is called to use the Google Test framework for a webOS component.
 It searches for the source code of the library `gtest` under the directory
@@ -1118,11 +1275,3 @@ This function should be called once per project from the topmost directory.
 Note that compiling gtest from source is the recommended way to use it, as
 explained
 [here](https://groups.google.com/d/msg/googletestframework/Zo7_HOv1MJ0/F4ZBGjh_ePcJ).
-
-WEBOS_INSTALL Variables
------------------------
-
-
-Other Global Variables
-----------------------
-
